@@ -149,3 +149,106 @@ class Executor:
         if self.dry_run:
             return
         path.mkdir(parents=True, exist_ok=True)
+
+
+# SECTION 8 — Two-stage logging setup
+
+def setup_console_logging() -> logging.Logger:
+    """Stage 1: call at startup before drive is known. Console output only."""
+    logger = logging.getLogger("organizer")
+    logger.setLevel(logging.DEBUG)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
+    logger.addHandler(console)
+    return logger
+
+
+def add_file_logging(logger: logging.Logger, log_dir: Path) -> None:
+    """Stage 2: call after drive is selected. Adds rotating file handler (INFRA-08)."""
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Pitfall 4: read-only media — fall back gracefully, do not crash
+        logger.warning("No se pudo crear el directorio de logs (disco de solo lectura). Usando solo consola.")
+        return
+    log_file = log_dir / "organizer.log"
+    fh = RotatingFileHandler(
+        log_file,
+        maxBytes=2 * 1024 * 1024,  # 2 MB per CLAUDE.md
+        backupCount=3,              # 3 backups per CLAUDE.md
+        encoding="utf-8",
+    )
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    logger.addHandler(fh)
+
+
+def select_drive(drives: list[dict]) -> dict:
+    """Select removable drive. Implements decisions D-01, D-02, D-03 (locked)."""
+    # D-02: no drives found — print error and exit (no retry loop, no manual fallback)
+    if not drives:
+        print("No se encontraron unidades extraibles. Conecta un disco e intentalo de nuevo.")
+        sys.exit(1)
+
+    # D-01: exactly one drive — auto-select silently, no confirmation needed
+    if len(drives) == 1:
+        d = drives[0]
+        print(f"Usando {d['root']} ({d['label']})")
+        return d
+
+    # D-03: multiple drives — numbered list: letter + label + size
+    print("Unidades extraibles disponibles:")
+    for i, d in enumerate(drives, 1):
+        size_str = f"{int(d['size_gb'])} GB"
+        print(f"  {i}) {d['root']} {d['label']} ({size_str})")
+
+    while True:
+        choice = input(f"Selecciona una unidad [1-{len(drives)}]: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(drives):
+            return drives[int(choice) - 1]
+        print(f"Entrada invalida. Escribe un numero entre 1 y {len(drives)}.")
+
+
+# SECTION 9 — Main menu loop and entry point
+
+def show_menu(executor: Executor, drive: dict) -> None:
+    """Numbered main menu (MENU-01). Phase 2-4 options shown as stubs for forward compatibility."""
+    while True:
+        print()
+        print(f"=== Organizador | {drive['root']} {drive['label']} ===")
+        print("  1) Organizar videos y juegos")
+        print("  2) Aplicar rename_plan.tsv")
+        print("  3) Revertir ultima operacion")
+        print("  4) Detectar incoherencias")
+        print("  0) Salir")
+        choice = input("Opcion: ").strip()
+
+        if choice == "0":
+            break
+        elif choice == "1":
+            print("(Disponible en Fase 2)")
+        elif choice == "2":
+            print("(Disponible en Fase 2)")
+        elif choice == "3":
+            print("(Disponible en Fase 3)")
+        elif choice == "4":
+            print("(Disponible en Fase 4)")
+        else:
+            print("Opcion invalida.")
+
+
+def main() -> None:
+    """Script entry point. No CLI arguments required (MENU-01)."""
+    logger = setup_console_logging()
+    drive = select_drive(get_removable_drives())
+
+    log_dir = Path(drive["root"]) / LOG_DIR_NAME
+    add_file_logging(logger, log_dir)
+
+    executor = Executor(dry_run=False)
+    show_menu(executor, drive)
+
+
+if __name__ == "__main__":
+    main()
