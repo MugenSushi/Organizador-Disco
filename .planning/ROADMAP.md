@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Create organizer.py: constants, safety guards, Executor class, logging, drive selection UI, and main menu shell
+- [x] 01-01-PLAN.md — Create organizer.py: constants, safety guards, Executor class, logging, drive selection UI, and main menu shell
 
 ### Phase 2: Core Operations
 **Goal**: Users can fully organize a drive — applying renames, sorting series/movies/games, co-locating subtitles, and removing empty folders
