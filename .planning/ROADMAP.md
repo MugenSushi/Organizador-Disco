@@ -34,7 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The Executor's dry_run flag causes every move/rename to print what would happen instead of changing anything on disk
   4. Calling Executor.move() with a destination that already exists produces a collision-safe target path (suffix 2, 3...) rather than overwriting
   5. A numbered main menu is presented after drive selection; the script does not require any command-line arguments
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md — Create organizer.py: constants, safety guards, Executor class, logging, drive selection UI, and main menu shell
 
 ### Phase 2: Core Operations
 **Goal**: Users can fully organize a drive — applying renames, sorting series/movies/games, co-locating subtitles, and removing empty folders
@@ -77,7 +80,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 0/TBD | Not started | - |
+| 1. Infrastructure | 0/1 | Not started | - |
 | 2. Core Operations | 0/TBD | Not started | - |
 | 3. Safety Features | 0/TBD | Not started | - |
 | 4. Power Features | 0/TBD | Not started | - |
