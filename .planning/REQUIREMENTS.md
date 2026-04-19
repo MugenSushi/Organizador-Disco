@@ -70,22 +70,40 @@
 
 ## Traceability
 
-*(Se completa al crear el roadmap)*
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 – INFRA-08 | — | Pending |
-| MENU-01 – MENU-03 | — | Pending |
-| RENAME-01 – RENAME-04 | — | Pending |
-| ORG-01 – ORG-05 | — | Pending |
-| UNDO-01 – UNDO-03 | — | Pending |
-| COH-01 – COH-03 | — | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
+| INFRA-06 | Phase 1 | Pending |
+| INFRA-07 | Phase 1 | Pending |
+| INFRA-08 | Phase 1 | Pending |
+| MENU-01 | Phase 1 | Pending |
+| RENAME-01 | Phase 2 | Pending |
+| RENAME-02 | Phase 2 | Pending |
+| ORG-01 | Phase 2 | Pending |
+| ORG-02 | Phase 2 | Pending |
+| ORG-03 | Phase 2 | Pending |
+| ORG-04 | Phase 2 | Pending |
+| ORG-05 | Phase 2 | Pending |
+| MENU-02 | Phase 2 | Pending |
+| MENU-03 | Phase 2 | Pending |
+| UNDO-01 | Phase 3 | Pending |
+| UNDO-02 | Phase 3 | Pending |
+| UNDO-03 | Phase 3 | Pending |
+| RENAME-03 | Phase 4 | Pending |
+| RENAME-04 | Phase 4 | Pending |
+| COH-01 | Phase 4 | Pending |
+| COH-02 | Phase 4 | Pending |
+| COH-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 23 ⚠️
+- Mapped to phases: 23
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-19*
-*Last updated: 2026-04-19 after initial definition*
+*Last updated: 2026-04-19 after roadmap creation*
