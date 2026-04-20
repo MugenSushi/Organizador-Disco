@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-04-20T09:21:07.517Z"
+last_updated: "2026-04-20T14:27:41.615Z"
 last_activity: 2026-04-20 -- Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 1
-  percent: 33
+  total_plans: 4
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** Organizar una unidad seleccionada en segundos sin miedo a errores, gracias al dry-run y el undo.
-**Current focus:** Phase 02 — Core Operations
+**Current focus:** Phase 02 — core-operations
 
 ## Current Position
 
-Phase: 02 (Core Operations) — EXECUTING
-Plan: 1 of 2
+Phase: 02 (core-operations) — EXECUTING
+Plan: 1 of 3
 Status: Executing Phase 02
 Last activity: 2026-04-20 -- Phase 02 execution started
 

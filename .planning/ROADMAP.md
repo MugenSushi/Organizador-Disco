@@ -53,7 +53,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Add Phase 2 engine: constants, compiled regex patterns, apply_renames(), _scan_videos_recursive(), _remove_empty_dirs()
-- [ ] 02-02-PLAN.md — Wire organize operations: _organize_games(), organize_videos_and_games(), update show_menu() with option 5 and _print_summary()
+- [x] 02-02-PLAN.md — Wire organize operations: _organize_games(), organize_videos_and_games(), update show_menu() with option 5 and _print_summary()
 
 ### Phase 3: Safety Features
 **Goal**: Users can confidently undo any operation and see a plain-language summary of what just happened
