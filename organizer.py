@@ -449,28 +449,47 @@ def organize_videos_and_games(executor: Executor, drive_root: Path) -> dict:
 
 # SECTION 14 — Main menu loop and entry point
 
+def _print_summary(counts: dict) -> None:
+    """MENU-03: one-line operation summary. print() not logger (user-visible output).
+
+    Uses \\u2713 escape for the checkmark — avoids UnicodeEncodeError on Windows cp1252 (Pitfall 8).
+    Field order is fixed: Procesados | Movidos | Saltados | Errores.
+    """
+    p = counts.get("procesados", 0)
+    m = counts.get("movidos", 0)
+    s = counts.get("saltados", 0)
+    e = counts.get("errores", 0)
+    print(f"\u2713 Procesados: {p} | Movidos: {m} | Saltados: {s} | Errores: {e}")
+
+
 def show_menu(executor: Executor, drive: dict) -> None:
-    """Numbered main menu (MENU-01). Phase 2-4 options shown as stubs for forward compatibility."""
+    """Numbered main menu. Option 5 toggles dry-run (D-01). No confirmation on operation with dry-run (D-02)."""
     while True:
+        dry_label = "ON" if executor.dry_run else "OFF"
         print()
         print(f"=== Organizador | {drive['root']} {drive['label']} ===")
         print("  1) Organizar videos y juegos")
         print("  2) Aplicar rename_plan.tsv")
         print("  3) Revertir ultima operacion")
         print("  4) Detectar incoherencias")
+        print(f"  5) Dry-run: {dry_label}")
         print("  0) Salir")
         choice = input("Opcion: ").strip()
 
         if choice == "0":
             break
         elif choice == "1":
-            print("(Disponible en Fase 2)")
+            counts = organize_videos_and_games(executor, Path(drive["root"]))
+            _print_summary(counts)
         elif choice == "2":
-            print("(Disponible en Fase 2)")
+            counts = apply_renames(executor, Path(drive["root"]))
+            _print_summary(counts)
         elif choice == "3":
             print("(Disponible en Fase 3)")
         elif choice == "4":
             print("(Disponible en Fase 4)")
+        elif choice == "5":
+            executor.dry_run = not executor.dry_run
         else:
             print("Opcion invalida.")
 
