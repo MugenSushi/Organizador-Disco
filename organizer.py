@@ -125,11 +125,15 @@ def _free_path(dst: Path) -> Path:
     suffix = dst.suffix
     parent = dst.parent
     counter = 2
-    while True:
+    while counter <= 9999:
         candidate = parent / f"{stem} ({counter}){suffix}"
         if not candidate.exists():
             return candidate
         counter += 1
+    # Fallback: use timestamp suffix to guarantee uniqueness
+    import time as _time
+    ts = int(_time.time() * 1000)
+    return parent / f"{stem} ({ts}){suffix}"
 
 
 # SECTION 7 — Executor class
@@ -321,22 +325,26 @@ def _scan_videos_recursive(root: Path, exclude_roots: frozenset) -> list:
     return results
 
 
-def _walk(drive_root: Path, current: Path, exclude_roots: frozenset, acc: list) -> None:
-    try:
-        with os.scandir(current) as it:
-            for entry in it:
-                if entry.is_dir(follow_symlinks=False):
-                    if current == drive_root and entry.name.lower() in exclude_roots:
-                        continue
-                    if should_skip_path(entry.path):
-                        continue
-                    _walk(drive_root, Path(entry.path), exclude_roots, acc)
-                elif entry.is_file(follow_symlinks=False):
-                    p = Path(entry.path)
-                    if p.suffix.lower() in VIDEO_EXTS:
-                        acc.append(p)
-    except PermissionError:
-        logger.warning("SKIP (permiso denegado): %s", current)
+def _walk(drive_root: Path, start: Path, exclude_roots: frozenset, acc: list) -> None:
+    """Iterative directory traversal — avoids recursion depth limit on deep structures."""
+    stack = [start]
+    while stack:
+        current = stack.pop()
+        try:
+            with os.scandir(current) as it:
+                for entry in it:
+                    if entry.is_dir(follow_symlinks=False):
+                        if current == drive_root and entry.name.lower() in exclude_roots:
+                            continue
+                        if should_skip_path(entry.path):
+                            continue
+                        stack.append(Path(entry.path))
+                    elif entry.is_file(follow_symlinks=False):
+                        p = Path(entry.path)
+                        if p.suffix.lower() in VIDEO_EXTS:
+                            acc.append(p)
+        except PermissionError:
+            logger.warning("SKIP (permiso denegado): %s", current)
 
 
 # SECTION 12 — Empty directory cleanup (ORG-05)
@@ -346,25 +354,26 @@ def _remove_empty_dirs(root: Path, counts_removed: list) -> None:
 
     Uses Path.rmdir() (wraps os.rmdir) — only succeeds on empty dirs.
     shutil.rmtree is forbidden by ORG-05 requirement.
+    Iterative implementation — avoids recursion depth limit on deep structures.
     """
-    try:
-        with os.scandir(root) as it:
-            entries = list(it)
-    except PermissionError:
-        return
+    # Collect candidate dirs bottom-up using os.walk topdown=False.
+    # os.walk handles its own internal iteration — no recursion depth concern.
+    candidates = []
+    for dirpath, dirnames, _ in os.walk(root, topdown=False, onerror=None):
+        dir_path = Path(dirpath)
+        if dir_path == root:
+            continue  # never remove root itself
+        if dir_path.name.lower() in CLEANUP_EXCLUDE_NAMES:
+            continue
+        candidates.append(dir_path)
 
-    for entry in entries:
-        if entry.is_dir(follow_symlinks=False):
-            if entry.name.lower() in CLEANUP_EXCLUDE_NAMES:
-                continue
-            child = Path(entry.path)
-            _remove_empty_dirs(child, counts_removed)  # recurse first (bottom-up)
-            try:
-                child.rmdir()  # OSError if not empty — safe contract
-                counts_removed.append(child)
-                logger.debug("RMDIR: %s", child)
-            except OSError:
-                pass  # not empty or permission denied — skip silently (ORG-05 best-effort)
+    for child in candidates:
+        try:
+            child.rmdir()  # OSError if not empty — safe contract
+            counts_removed.append(child)
+            logger.debug("RMDIR: %s", child)
+        except OSError:
+            pass  # not empty or permission denied — skip silently (ORG-05 best-effort)
 
 
 # SECTION 13 — File organization operations (Phase 2)
