@@ -282,6 +282,23 @@ def apply_renames(executor, drive_root: Path) -> dict:
             continue
 
         dst = Path(new_str)
+        # GAP-2 fix: enforce drive_root containment — reject absolute paths outside the drive.
+        # Path.is_relative_to() requires Python 3.9+ (project targets Python 3.x, CLAUDE.md).
+        try:
+            src_resolved = src.resolve()
+            dst_resolved = dst.resolve()
+        except OSError:
+            logger.warning("Fila %d ignorada: no se pudo resolver la ruta.", i)
+            counts["saltados"] += 1
+            continue
+        if not src_resolved.is_relative_to(drive_root.resolve()) or \
+                not dst_resolved.is_relative_to(drive_root.resolve()):
+            logger.warning(
+                "SKIP (path traversal): fila %d — ruta fuera de la unidad seleccionada: src=%s dst=%s",
+                i, src_resolved, dst_resolved,
+            )
+            counts["saltados"] += 1
+            continue
         result = executor.move(src, dst)
         if result is not None:
             counts["movidos"] += 1
