@@ -52,7 +52,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Add Phase 2 engine: constants, compiled regex patterns, apply_renames(), _scan_videos_recursive(), _remove_empty_dirs()
+- [x] 02-01-PLAN.md — Add Phase 2 engine: constants, compiled regex patterns, apply_renames(), _scan_videos_recursive(), _remove_empty_dirs()
 - [ ] 02-02-PLAN.md — Wire organize operations: _organize_games(), organize_videos_and_games(), update show_menu() with option 5 and _print_summary()
 
 ### Phase 3: Safety Features
