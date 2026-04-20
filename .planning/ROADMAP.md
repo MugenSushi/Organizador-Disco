@@ -46,11 +46,14 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Loading a valid rename_plan.tsv and choosing "Apply renames" moves (or dry-run reports) every listed file using literal paths; bracket characters in filenames are handled correctly
   2. Choosing "Organize" detects series files by pattern and places them under Series\<Show>\Temporada X\
-  3. Choosing "Organize" detects movie files by pattern and places them under Peliculas\<Titulo (Año)>\
-  4. Game system folders (PC, PS1, PS2, PSP, GBA, GBC) are moved into Juegos\<system>\
+  3. Choosing "Organize" detects movie files by pattern and places them under Peliculas\<Titulo (Ano)>\
+  4. Game system folders (PS1, PS2, PSP, GBA, GBC) are moved into Juegos\<system>\ (PC and Steam excluded per D-04)
   5. After any organize operation, subtitle files (.srt .ass .sub .idx) sharing a basename with a moved video land beside that video, and all resulting empty folders are removed with os.rmdir
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Add Phase 2 engine: constants, compiled regex patterns, apply_renames(), _scan_videos_recursive(), _remove_empty_dirs()
+- [ ] 02-02-PLAN.md — Wire organize operations: _organize_games(), organize_videos_and_games(), update show_menu() with option 5 and _print_summary()
 
 ### Phase 3: Safety Features
 **Goal**: Users can confidently undo any operation and see a plain-language summary of what just happened
@@ -76,11 +79,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 0/1 | Not started | - |
-| 2. Core Operations | 0/TBD | Not started | - |
+| 2. Core Operations | 0/2 | Not started | - |
 | 3. Safety Features | 0/TBD | Not started | - |
 | 4. Power Features | 0/TBD | Not started | - |
