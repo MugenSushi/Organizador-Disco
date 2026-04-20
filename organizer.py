@@ -278,16 +278,21 @@ def apply_renames(executor, drive_root: Path) -> dict:
             continue
 
         counts["procesados"] += 1
-        src = Path(old_str)  # literal — Path() never glob-expands (RENAME-02)
+        src_raw = Path(old_str)  # literal — Path() never glob-expands (RENAME-02)
+        dst_raw = Path(new_str)
+        # Anchor relative paths to drive_root — TSV may use either absolute or relative forms.
+        # A relative path resolved against CWD (the script dir) would silently miss all files.
+        src = src_raw if src_raw.is_absolute() else drive_root / src_raw
+        dst = dst_raw if dst_raw.is_absolute() else drive_root / dst_raw
 
         if not src.exists():
             logger.warning("SKIP (no existe): %s", src)
             counts["saltados"] += 1
             continue
 
-        dst = Path(new_str)
-        # GAP-2 fix: enforce drive_root containment — reject absolute paths outside the drive.
-        # Path.is_relative_to() requires Python 3.9+ (project targets Python 3.x, CLAUDE.md).
+        # GAP-2 fix: enforce drive_root containment — reject paths outside the drive.
+        # Use string prefix comparison (Python 3.6+ compatible) instead of
+        # Path.is_relative_to() which requires Python 3.9+.
         try:
             src_resolved = src.resolve()
             dst_resolved = dst.resolve()
@@ -295,8 +300,11 @@ def apply_renames(executor, drive_root: Path) -> dict:
             logger.warning("Fila %d ignorada: no se pudo resolver la ruta.", i)
             counts["saltados"] += 1
             continue
-        if not src_resolved.is_relative_to(drive_root.resolve()) or \
-                not dst_resolved.is_relative_to(drive_root.resolve()):
+        drive_root_str = str(drive_root.resolve()).lower()
+        src_str_low = str(src_resolved).lower()
+        dst_str_low = str(dst_resolved).lower()
+        if not (src_str_low.startswith(drive_root_str + "\\") or src_str_low == drive_root_str) or \
+                not (dst_str_low.startswith(drive_root_str + "\\") or dst_str_low == drive_root_str):
             logger.warning(
                 "SKIP (path traversal): fila %d — ruta fuera de la unidad seleccionada: src=%s dst=%s",
                 i, src_resolved, dst_resolved,
