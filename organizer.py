@@ -403,7 +403,15 @@ def _organize_games(executor: Executor, drive_root: Path, counts: dict) -> None:
             with os.scandir(src_dir) as it:
                 for entry in it:
                     counts["procesados"] += 1
-                    result = executor.move(Path(entry.path), dst_dir / entry.name)
+                    p = Path(entry.path)
+                    # Check hard-block before calling executor.move — executor.move returns None
+                    # for BOTH genuine OS errors AND no-touch blocks, so we must distinguish here
+                    # to avoid counting normal ROM/ISO skips as errors (WR-02).
+                    if is_no_touch(str(p)):
+                        logger.info("SKIP (no-touch ext): %s", p)
+                        counts["saltados"] += 1
+                        continue
+                    result = executor.move(p, dst_dir / entry.name)
                     if result is not None:
                         counts["movidos"] += 1
                     else:
