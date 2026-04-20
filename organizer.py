@@ -349,6 +349,104 @@ def _remove_empty_dirs(root: Path, counts_removed: list) -> None:
                 pass  # not empty or permission denied — skip silently (ORG-05 best-effort)
 
 
+# SECTION 13 — File organization operations (Phase 2)
+
+def _organize_games(executor: Executor, drive_root: Path, counts: dict) -> None:
+    """Move contents of each console system folder into Juegos/<system>/. (ORG-03)
+
+    Ground truth: Ordenar.ps1 lines 174-191.
+    D-04: CONSOLE_SYSTEMS excludes PC and Steam — silent skip by omission.
+    Moves CONTENTS of each folder, not the folder itself (Pitfall 2).
+    """
+    juegos_root = drive_root / "Juegos"
+    for sys_name in CONSOLE_SYSTEMS:
+        src_dir = drive_root / sys_name
+        if not src_dir.exists():
+            continue
+        dst_dir = juegos_root / sys_name
+        try:
+            with os.scandir(src_dir) as it:
+                for entry in it:
+                    counts["procesados"] += 1
+                    result = executor.move(Path(entry.path), dst_dir / entry.name)
+                    if result is not None:
+                        counts["movidos"] += 1
+                    else:
+                        counts["errores"] += 1
+        except PermissionError:
+            logger.warning("SKIP (permiso denegado): %s", src_dir)
+
+
+def _move_subtitles(executor: Executor, video_src: Path, video_dst_dir: Path, counts: dict) -> None:
+    """Move subtitle files sharing video_src's basename to video_dst_dir. (ORG-04)
+
+    Ground truth: Ordenar.ps1 lines 256-268 and 296-309.
+    Only called after a successful video move (Pitfall 3 — never call on failed move).
+    Checks same directory as video source only — not recursive (Assumption A1).
+    """
+    stem = video_src.stem
+    src_dir = video_src.parent
+    for ext in SUB_EXTS:
+        sub_src = src_dir / (stem + ext)
+        if sub_src.exists():
+            counts["procesados"] += 1
+            result = executor.move(sub_src, video_dst_dir / sub_src.name)
+            if result is not None:
+                counts["movidos"] += 1
+            else:
+                counts["errores"] += 1
+
+
+def organize_videos_and_games(executor: Executor, drive_root: Path) -> dict:
+    """Organize all videos and game folders on the drive. Returns summary counter dict.
+
+    Step 1: Move console game folder contents into Juegos/<system>/ (ORG-03).
+    Step 2: Scan for video files, classify as series or movies, move to correct location (ORG-01, ORG-02).
+    Step 3: Co-locate subtitles beside moved videos (ORG-04).
+    Step 4: Remove empty folders (ORG-05).
+    """
+    counts = {"procesados": 0, "movidos": 0, "saltados": 0, "errores": 0}
+    drive_root = Path(drive_root)
+
+    _organize_games(executor, drive_root, counts)
+
+    exclude_top = SCAN_EXCLUDE_DIR_NAMES
+    video_files = _scan_videos_recursive(drive_root, exclude_top)
+
+    if not video_files:
+        print("No se encontraron archivos de video para organizar.")
+        return counts
+
+    for video_path in video_files:
+        counts["procesados"] += 1
+        stem = video_path.stem
+
+        m_series = RE_SERIES.match(stem)
+        if m_series:
+            show = m_series.group("show").strip()
+            season = int(m_series.group("season"))
+            dst_dir = drive_root / "Series" / show / f"Temporada {season}"
+        else:
+            m_movie = RE_MOVIE.match(stem)
+            if m_movie:
+                folder = f"{m_movie.group('title').strip()} ({m_movie.group('year')})"
+            else:
+                folder = stem.strip()
+            dst_dir = drive_root / "Peliculas" / folder
+
+        result = executor.move(video_path, dst_dir / video_path.name)
+        if result is not None:
+            counts["movidos"] += 1
+            _move_subtitles(executor, video_path, result.parent, counts)
+        else:
+            counts["errores"] += 1
+
+    removed = []
+    _remove_empty_dirs(drive_root, removed)
+
+    return counts
+
+
 # SECTION 14 — Main menu loop and entry point
 
 def show_menu(executor: Executor, drive: dict) -> None:
