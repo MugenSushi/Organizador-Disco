@@ -2,6 +2,7 @@
 
 # SECTION 1 — stdlib imports (zero external dependencies)
 import ctypes
+import csv
 import json
 import logging
 import os
@@ -452,14 +453,14 @@ def organize_videos_and_games(executor: Executor, drive_root: Path) -> dict:
 def _print_summary(counts: dict) -> None:
     """MENU-03: one-line operation summary. print() not logger (user-visible output).
 
-    Uses \\u2713 escape for the checkmark — avoids UnicodeEncodeError on Windows cp1252 (Pitfall 8).
+    Uses [OK] ASCII marker — avoids UnicodeEncodeError on Windows cp1252 terminals.
     Field order is fixed: Procesados | Movidos | Saltados | Errores.
     """
     p = counts.get("procesados", 0)
     m = counts.get("movidos", 0)
     s = counts.get("saltados", 0)
     e = counts.get("errores", 0)
-    print(f"\u2713 Procesados: {p} | Movidos: {m} | Saltados: {s} | Errores: {e}")
+    print(f"[OK] Procesados: {p} | Movidos: {m} | Saltados: {s} | Errores: {e}")
 
 
 def show_menu(executor: Executor, drive: dict) -> None:
