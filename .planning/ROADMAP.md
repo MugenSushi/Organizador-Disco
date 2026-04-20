@@ -63,7 +63,11 @@ Plans:
   1. After any operation that moves or renames files, a JSON log is written atomically to <drive>\_organizer_logs\ recording every change with drive-relative paths and volume serial number
   2. Selecting "Undo last run" from the menu reverses every move from the most recent log in correct reverse order, and the log is resolved to the correct drive even if its letter changed since the last run
   3. At the end of every operation the menu displays a summary line: files processed, moved, skipped, and errors
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Executor accumulator, flush_undo_log(), _prepare_executor_for_run(), _flush_and_clear(), show_menu/main wiring
+- [ ] 03-02-PLAN.md — undo_last_run() with serial re-anchoring, path traversal guard, reverse revert; wire menu option 3
 
 ### Phase 4: Power Features
 **Goal**: Users can discover rename candidates automatically and audit the drive for structural problems without manual inspection
@@ -85,5 +89,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 0/1 | Not started | - |
 | 2. Core Operations | 0/2 | Not started | - |
-| 3. Safety Features | 0/TBD | Not started | - |
+| 3. Safety Features | 0/2 | Not started | - |
 | 4. Power Features | 0/TBD | Not started | - |
