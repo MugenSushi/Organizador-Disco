@@ -35,6 +35,25 @@ SKIP_PATH_PARTS: tuple[str, ...] = (
 LOG_DIR_NAME = "_organizer_logs"
 DRIVE_REMOVABLE = 2  # GetDriveTypeW constant for removable media
 
+# Phase 2 constants — video organizer
+VIDEO_EXTS: frozenset[str] = frozenset({
+    ".mp4", ".mkv", ".avi", ".mov", ".m4v", ".wmv", ".mpg", ".mpeg", ".ts",
+})
+
+SUB_EXTS: tuple[str, ...] = (".srt", ".ass", ".sub", ".idx")
+
+# Ground truth: Ordenar.ps1 lines 172-192. PC and Steam absent per D-04 (locked decision).
+CONSOLE_SYSTEMS: tuple[str, ...] = ("PS1", "PS2", "PSP", "GBA", "GBC")
+
+# Lowercase — compared via .lower(). Confirmed in 02-UI-SPEC.md (Claude's discretion).
+SCAN_EXCLUDE_DIR_NAMES: frozenset[str] = frozenset({
+    "_organizer_logs", "series", "peliculas", "juegos",
+})
+
+CLEANUP_EXCLUDE_NAMES: frozenset[str] = frozenset({
+    "_organizer_logs",
+})
+
 # SECTION 3 — Module-level logger (before all function/class definitions)
 logger = logging.getLogger("organizer")
 
@@ -210,7 +229,22 @@ def select_drive(drives: list[dict]) -> dict:
         print(f"Entrada invalida. Escribe un numero entre 1 y {len(drives)}.")
 
 
-# SECTION 9 — Main menu loop and entry point
+# SECTION 9 — Compiled regex patterns (Phase 2)
+# Ground truth: Ordenar.ps1 line 236 (series) and line 278 (movies).
+# Compiled at module level — never inside a function or loop (CLAUDE.md convention).
+
+RE_SERIES = re.compile(
+    r"^(?P<show>.+?)\s-\sTemporada\s(?P<season>\d+)\s-\sEpisodio\s(?P<ep>\d+)",
+    re.IGNORECASE,
+)
+
+RE_MOVIE = re.compile(
+    r"^(?P<title>.+?)\s\((?P<year>(?:19|20)\d{2})\)",
+    re.IGNORECASE,
+)
+
+
+# SECTION 14 — Main menu loop and entry point
 
 def show_menu(executor: Executor, drive: dict) -> None:
     """Numbered main menu (MENU-01). Phase 2-4 options shown as stubs for forward compatibility."""
