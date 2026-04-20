@@ -244,6 +244,111 @@ RE_MOVIE = re.compile(
 )
 
 
+# SECTION 10 — TSV rename applier (RENAME-01, RENAME-02)
+
+def apply_renames(executor, drive_root: Path) -> dict:
+    """Apply renames from rename_plan.tsv. Returns summary counter dict."""
+    plan_file = drive_root / "_organizer_logs" / "rename_plan.tsv"
+    counts = {"procesados": 0, "movidos": 0, "saltados": 0, "errores": 0}
+
+    if not plan_file.exists():
+        print(f"No se encontro rename_plan.tsv en {drive_root}. "
+              "Coloca el archivo en _organizer_logs\\ y vuelve a intentarlo.")
+        return counts
+
+    with open(plan_file, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        rows = list(reader)
+
+    if not rows:
+        print("El archivo rename_plan.tsv esta vacio.")
+        return counts
+
+    for i, row in enumerate(rows, 1):
+        old_str = (row.get("old_path") or "").strip()
+        new_str = (row.get("new_path") or "").strip()
+
+        if not old_str or not new_str:
+            logger.warning("Fila %d ignorada: faltan columnas old_path / new_path.", i)
+            continue
+
+        counts["procesados"] += 1
+        src = Path(old_str)  # literal — Path() never glob-expands (RENAME-02)
+
+        if not src.exists():
+            logger.warning("SKIP (no existe): %s", src)
+            counts["saltados"] += 1
+            continue
+
+        dst = Path(new_str)
+        result = executor.move(src, dst)
+        if result is not None:
+            counts["movidos"] += 1
+        else:
+            counts["errores"] += 1
+
+    return counts
+
+
+# SECTION 11 — Recursive video scanner (INFRA-05: os.scandir, never glob/rglob)
+
+def _scan_videos_recursive(root: Path, exclude_roots: frozenset) -> list:
+    """Return all video files under root, skipping excluded top-level dirs.
+
+    Uses os.scandir exclusively (INFRA-05 — handles bracket chars in filenames).
+    exclude_roots: lowercased folder names to skip when current dir is root.
+    """
+    results = []
+    _walk(root, root, exclude_roots, results)
+    return results
+
+
+def _walk(drive_root: Path, current: Path, exclude_roots: frozenset, acc: list) -> None:
+    try:
+        with os.scandir(current) as it:
+            for entry in it:
+                if entry.is_dir(follow_symlinks=False):
+                    if current == drive_root and entry.name.lower() in exclude_roots:
+                        continue
+                    if should_skip_path(entry.path):
+                        continue
+                    _walk(drive_root, Path(entry.path), exclude_roots, acc)
+                elif entry.is_file(follow_symlinks=False):
+                    p = Path(entry.path)
+                    if p.suffix.lower() in VIDEO_EXTS:
+                        acc.append(p)
+    except PermissionError:
+        logger.warning("SKIP (permiso denegado): %s", current)
+
+
+# SECTION 12 — Empty directory cleanup (ORG-05)
+
+def _remove_empty_dirs(root: Path, counts_removed: list) -> None:
+    """Remove empty directories under root (bottom-up). Never removes root itself.
+
+    Uses Path.rmdir() (wraps os.rmdir) — only succeeds on empty dirs.
+    shutil.rmtree is forbidden by ORG-05 requirement.
+    """
+    try:
+        with os.scandir(root) as it:
+            entries = list(it)
+    except PermissionError:
+        return
+
+    for entry in entries:
+        if entry.is_dir(follow_symlinks=False):
+            if entry.name.lower() in CLEANUP_EXCLUDE_NAMES:
+                continue
+            child = Path(entry.path)
+            _remove_empty_dirs(child, counts_removed)  # recurse first (bottom-up)
+            try:
+                child.rmdir()  # OSError if not empty — safe contract
+                counts_removed.append(child)
+                logger.debug("RMDIR: %s", child)
+            except OSError:
+                pass  # not empty or permission denied — skip silently (ORG-05 best-effort)
+
+
 # SECTION 14 — Main menu loop and entry point
 
 def show_menu(executor: Executor, drive: dict) -> None:
