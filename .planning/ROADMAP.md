@@ -66,7 +66,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Executor accumulator, flush_undo_log(), _prepare_executor_for_run(), _flush_and_clear(), show_menu/main wiring
+- [x] 03-01-PLAN.md — Executor accumulator, flush_undo_log(), _prepare_executor_for_run(), _flush_and_clear(), show_menu/main wiring
 - [ ] 03-02-PLAN.md — undo_last_run() with serial re-anchoring, path traversal guard, reverse revert; wire menu option 3
 
 ### Phase 4: Power Features
