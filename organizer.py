@@ -563,6 +563,115 @@ def _flush_and_clear(executor: Executor, log_path: Path) -> None:
     executor._moves = []
 
 
+def undo_last_run(drive: dict, all_drives: list[dict]) -> None:
+    """Revert the last logged operation. Implements UNDO-03, UNDO-02 (serial re-anchor), D-04 (skip missing).
+
+    Reads last_run.json, matches by serial to handle drive-letter changes,
+    reverts moves in reverse order, deletes log after to prevent double-undo.
+    """
+    # Step 1: locate last_run.json — search all drives by serial to handle letter changes (UNDO-02)
+    log_data = None
+    actual_log_path = None
+    for d in all_drives:
+        candidate = Path(d["root"]) / LOG_DIR_NAME / "last_run.json"
+        if candidate.exists():
+            try:
+                raw = json.loads(candidate.read_text(encoding="utf-8"))
+                if raw.get("serial") == drive["serial"]:
+                    log_data = raw
+                    actual_log_path = candidate
+                    break
+            except (json.JSONDecodeError, OSError):
+                continue
+
+    # Fallback: check current drive directly (common case: letter unchanged)
+    if log_data is None:
+        fallback = Path(drive["root"]) / LOG_DIR_NAME / "last_run.json"
+        if fallback.exists():
+            try:
+                log_data = json.loads(fallback.read_text(encoding="utf-8"))
+                actual_log_path = fallback
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    if log_data is None:
+        print("No hay ninguna operacion para deshacer.")
+        return
+
+    moves = log_data.get("moves", [])
+    if not moves:
+        print("El log no contiene movimientos para revertir.")
+        return
+
+    # Step 2: revert in reverse order (D-04: skip missing files, never abort)
+    revert_root = Path(drive["root"])
+    drive_root_str = str(revert_root.resolve()).lower()
+    reverted = 0
+    skipped = []
+    errors = 0
+
+    for entry in reversed(moves):
+        src_rel = entry.get("src", "")
+        dst_rel = entry.get("dst", "")
+        if not src_rel or not dst_rel:
+            logger.warning("UNDO: entrada ignorada — faltan campos src/dst.")
+            skipped.append(dst_rel or "?")
+            continue
+
+        # Reconstruct absolute paths: src = original location, dst = current location
+        src_abs = revert_root / src_rel
+        dst_abs = revert_root / dst_rel
+
+        # Path traversal guard — mirrors apply_renames() lines 296-313
+        try:
+            src_resolved = src_abs.resolve()
+            dst_resolved = dst_abs.resolve()
+        except OSError:
+            logger.warning("UNDO SKIP: no se pudo resolver ruta — %s", dst_rel)
+            skipped.append(dst_rel)
+            continue
+        src_str_low = str(src_resolved).lower()
+        dst_str_low = str(dst_resolved).lower()
+        if not (src_str_low.startswith(drive_root_str + "\\") or src_str_low == drive_root_str) or \
+                not (dst_str_low.startswith(drive_root_str + "\\") or dst_str_low == drive_root_str):
+            logger.warning(
+                "UNDO SKIP (path traversal): ruta fuera de la unidad: src=%s dst=%s",
+                src_resolved, dst_resolved,
+            )
+            skipped.append(dst_rel)
+            continue
+
+        # D-04: if file is no longer at expected dst, skip (not an error)
+        if not dst_abs.exists():
+            skipped.append(dst_rel)
+            continue
+
+        try:
+            src_abs.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(dst_abs), str(src_abs))
+            reverted += 1
+            logger.info("UNDO: %s -> %s", dst_abs, src_abs)
+        except PermissionError:
+            logger.error("UNDO DENY: %s (acceso denegado)", dst_abs)
+            errors += 1
+        except OSError as exc:
+            logger.error("UNDO ERR: %s : %s", dst_abs, exc)
+            errors += 1
+
+    # Step 3: summary line — consistent with _print_summary [OK] ASCII style
+    print(f"[OK] Revertidos: {reverted} | Saltados: {len(skipped)} | Errores: {errors}")
+    if skipped:
+        print("Archivos no encontrados (saltados):")
+        for s in skipped:
+            print(f"  {s}")
+
+    # Step 4: delete log to prevent double-undo (Pattern 5 from RESEARCH.md)
+    try:
+        actual_log_path.unlink()
+    except OSError:
+        pass  # non-critical — log left behind is harmless
+
+
 def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
     """Numbered main menu. Option 5 toggles dry-run (D-01). No confirmation on operation with dry-run (D-02)."""
     log_path = Path(drive["root"]) / LOG_DIR_NAME / "last_run.json"
@@ -591,7 +700,7 @@ def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
             _print_summary(counts)
             _flush_and_clear(executor, log_path)
         elif choice == "3":
-            print("(Disponible en Fase 3)")
+            undo_last_run(drive, drives)
         elif choice == "4":
             print("(Disponible en Fase 4)")
         elif choice == "5":
