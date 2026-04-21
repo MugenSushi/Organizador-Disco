@@ -67,7 +67,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Executor accumulator, flush_undo_log(), _prepare_executor_for_run(), _flush_and_clear(), show_menu/main wiring
-- [ ] 03-02-PLAN.md — undo_last_run() with serial re-anchoring, path traversal guard, reverse revert; wire menu option 3
+- [x] 03-02-PLAN.md — undo_last_run() with serial re-anchoring, path traversal guard, reverse revert; wire menu option 3
 
 ### Phase 4: Power Features
 **Goal**: Users can discover rename candidates automatically and audit the drive for structural problems without manual inspection
