@@ -14,7 +14,7 @@ Organizar una unidad seleccionada en segundos sin miedo a errores, gracias al dr
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Undo: guardar log JSON de movimientos y permitir revertir la última ejecución — Validated in Phase 3: Safety Features
 
 ### Active
 
@@ -27,7 +27,6 @@ Organizar una unidad seleccionada en segundos sin miedo a errores, gracias al dr
 - [ ] Organizar Películas: detectar "Título (Año)", mover a Peliculas\Título (Año)\
 - [ ] Mover subtítulos (.srt/.ass/.sub/.idx) junto al vídeo correspondiente
 - [ ] Dry-run / Preview: simular todas las operaciones sin mover nada
-- [ ] Undo: guardar log JSON de movimientos y permitir revertir la última ejecución
 - [ ] Limpieza de carpetas vacías tras mover archivos
 - [ ] Detector de incoherencias: reportar vídeos fuera de lugar, series sin carpeta de temporada, duplicados de nombre
 
@@ -78,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-19 after initialization*
+*Last updated: 2026-04-21 — Phase 3 complete: undo/rollback implemented*
