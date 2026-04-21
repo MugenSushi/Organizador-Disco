@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import sys
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -141,6 +142,9 @@ def _free_path(dst: Path) -> Path:
 class Executor:
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run  # mutable — Phase 2 menu: executor.dry_run = True
+        self._moves: list[dict] = []       # per-run move accumulator; cleared before each op
+        self._log_serial: int = 0          # set by _prepare_executor_for_run before each op
+        self._log_drive_root: str = ""     # set by _prepare_executor_for_run before each op
 
     def move(self, src: Path, dst: Path) -> Path | None:
         """Move src to collision-safe dst. Returns final path or None if blocked/errored."""
@@ -160,6 +164,20 @@ class Executor:
         try:
             shutil.move(str(src), str(final_dst))  # NOT Path.rename — fails cross-filesystem
             logger.info("MOVE: %s -> %s", src, final_dst)
+            # Accumulate for undo log — only on real moves (dry_run gated above)
+            if self._log_drive_root:
+                drive_root = Path(self._log_drive_root)
+                try:
+                    src_rel = str(src.relative_to(drive_root))
+                    dst_rel = str(final_dst.relative_to(drive_root))
+                except ValueError:
+                    src_rel = str(src)
+                    dst_rel = str(final_dst)
+                self._moves.append({
+                    "src": src_rel,
+                    "dst": dst_rel,
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                })
         except PermissionError:
             logger.error("DENY: %s (acceso denegado)", src)
             return None
