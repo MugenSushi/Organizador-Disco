@@ -523,8 +523,49 @@ def _print_summary(counts: dict) -> None:
     print(f"[OK] Procesados: {p} | Movidos: {m} | Saltados: {s} | Errores: {e}")
 
 
-def show_menu(executor: Executor, drive: dict) -> None:
+# SECTION 15 — Undo log helpers (UNDO-01, UNDO-02)
+
+def flush_undo_log(log_path: Path, data: dict) -> None:
+    """Write undo log atomically using .tmp + os.replace. No-op if moves list is empty (UNDO-01)."""
+    if not data.get("moves"):
+        return
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = log_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(str(tmp), str(log_path))  # atomic on same filesystem (MoveFileExW)
+    except PermissionError:
+        logger.warning("No se pudo escribir el log de undo (disco de solo lectura).")
+    except OSError as exc:
+        logger.error("ERR escribiendo log de undo: %s", exc)
+
+
+def _prepare_executor_for_run(executor: Executor, drive: dict) -> None:
+    """Set per-run metadata on executor and clear move accumulator before each operation."""
+    executor._log_serial = drive["serial"]
+    executor._log_drive_root = drive["root"]
+    executor._moves = []
+
+
+def _flush_and_clear(executor: Executor, log_path: Path) -> None:
+    """Write undo log atomically if this was a real run with recorded moves (UNDO-01, UNDO-02)."""
+    if executor.dry_run:
+        return  # dry-run: no real moves, nothing to undo (Claude's discretion)
+    if not executor._moves:
+        return
+    data = {
+        "serial": executor._log_serial,
+        "drive_root": executor._log_drive_root,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "moves": executor._moves,
+    }
+    flush_undo_log(log_path, data)
+    executor._moves = []
+
+
+def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
     """Numbered main menu. Option 5 toggles dry-run (D-01). No confirmation on operation with dry-run (D-02)."""
+    log_path = Path(drive["root"]) / LOG_DIR_NAME / "last_run.json"
     while True:
         dry_label = "ON" if executor.dry_run else "OFF"
         print()
@@ -540,11 +581,15 @@ def show_menu(executor: Executor, drive: dict) -> None:
         if choice == "0":
             break
         elif choice == "1":
+            _prepare_executor_for_run(executor, drive)
             counts = organize_videos_and_games(executor, Path(drive["root"]))
             _print_summary(counts)
+            _flush_and_clear(executor, log_path)
         elif choice == "2":
+            _prepare_executor_for_run(executor, drive)
             counts = apply_renames(executor, Path(drive["root"]))
             _print_summary(counts)
+            _flush_and_clear(executor, log_path)
         elif choice == "3":
             print("(Disponible en Fase 3)")
         elif choice == "4":
@@ -558,13 +603,14 @@ def show_menu(executor: Executor, drive: dict) -> None:
 def main() -> None:
     """Script entry point. No CLI arguments required (MENU-01)."""
     logger = setup_console_logging()
-    drive = select_drive(get_removable_drives())
+    drives = get_removable_drives()
+    drive = select_drive(drives)
 
     log_dir = Path(drive["root"]) / LOG_DIR_NAME
     add_file_logging(logger, log_dir)
 
     executor = Executor(dry_run=False)
-    show_menu(executor, drive)
+    show_menu(executor, drive, drives)
 
 
 if __name__ == "__main__":
