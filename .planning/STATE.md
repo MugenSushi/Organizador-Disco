@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Mejoras Avanzadas
-status: defining requirements
-stopped_at: Milestone v1.1 started
-last_updated: "2026-04-22T12:30:00.000Z"
+milestone: v1.0-hotfix
+milestone_name: Drive Detection Expansion
+status: in-progress
+stopped_at: null
+last_updated: "2026-04-22T15:30:00.000Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 6
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-19)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-22 — Milestone v1.1 started
+Phase: 4
+Plan: Not started
+Status: All phases completed
+Last activity: 2026-04-21
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -89,5 +89,32 @@ None yet.
 Last session: 2026-04-21T11:01:29.570Z
 Stopped at: Phase 4 context gathered
 Resume file: .planning/phases/04-power-features/04-CONTEXT.md
+
+## Recent Changes (2026-04-22)
+
+### Drive Detection Expansion
+
+**Modified:** 2026-04-22 15:30
+**Files Changed:**
+- `organizer.py` — Updated `get_removable_drives()` to detect all drive types (DRIVE_FIXED + DRIVE_REMOVABLE)
+- Added `DRIVE_FIXED` constant (type 3) to support internal disks
+- Added `DRIVE_SUPPORTED` tuple to define accepted drive types
+- Updated `select_drive()` function to display drive type (Interno/Extraíble)
+- All functions maintain backward compatibility; no breaking changes
+
+**Rationale:** User couldn't see internal disks (C:, D:, E:, K:) that contained media to organize. Expansion allows flexible drive selection without requiring USB-only removable media.
+
+**Tested:** 
+- ✅ Detects 4 drives: C: (223GB), D:\ODD (238GB), E:\TOSHIBA EXT (1863GB), K:\HDD (477GB)
+- ✅ Menu displays type annotation for each drive
+- ✅ Dry-run, undo, and all operations remain unchanged
+
+**Documentation Updated:**
+- PROJECT.md — Updated "What This Is" section (discos → discos internos y extraíbles)
+- REQUIREMENTS.md — INFRA-01 updated to reflect all drive types
+- This STATE.md — Added change log
+
+
+
 
 

@@ -7,8 +7,8 @@
 
 ### Infraestructura
 
-- [x] **INFRA-01**: El script detecta todas las unidades extraíbles disponibles al arrancar (via ctypes.windll.kernel32 GetDriveTypeW)
-- [x] **INFRA-02**: El script pregunta al usuario cuál unidad usar y la valida antes de continuar
+- [x] **INFRA-01**: El script detecta todas las unidades disponibles (internas y extraíbles) al arrancar (via ctypes.windll.kernel32 GetDriveTypeW con tipos DRIVE_FIXED y DRIVE_REMOVABLE)
+- [x] **INFRA-02**: El script pregunta al usuario cuál unidad usar y la valida antes de continuar (incluye tipo: Interno/Extraíble)
 - [x] **INFRA-03**: Todos los archivos con extensiones ROM/ISO son ignorados en cualquier operación (hard block: .iso .bin .cue .img .mdf .nrg .chd .gba .gbc .gb .nes .sfc .smc .n64 .z64 .3ds .cia .nds .gcm .wbfs .wad .xci .nsp)
 - [x] **INFRA-04**: Rutas del sistema son ignoradas en cualquier operación (System Volume Information, $RECYCLE.BIN, WindowsApps, Program Files, Amazon Games)
 - [x] **INFRA-05**: El escaneo de la unidad usa os.scandir (nunca glob/rglob) para soportar nombres con corchetes []
