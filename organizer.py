@@ -1,4 +1,4 @@
-"""Organizador de Disco — organiza unidades extraibles con medios (videos, juegos, ROMs)."""
+"""Organizador de Disco — organiza discos (internos y extraibles) con medios (videos, juegos, ROMs)."""
 
 # SECTION 1 — stdlib imports (zero external dependencies)
 import ctypes
@@ -36,6 +36,8 @@ SKIP_PATH_PARTS: tuple[str, ...] = (
 
 LOG_DIR_NAME = "_organizer_logs"
 DRIVE_REMOVABLE = 2  # GetDriveTypeW constant for removable media
+DRIVE_FIXED = 3      # GetDriveTypeW constant for fixed internal drives
+DRIVE_SUPPORTED = (DRIVE_REMOVABLE, DRIVE_FIXED)  # Supported drive types
 
 # Phase 2 constants — video organizer
 VIDEO_EXTS: frozenset[str] = frozenset({
@@ -63,7 +65,7 @@ logger = logging.getLogger("organizer")
 # SECTION 4 — Drive detection helpers
 
 def get_removable_drives() -> list[dict]:
-    """Return list of dicts: [{root, label, size_gb, serial}] for all removable drives."""
+    """Return list of dicts: [{root, label, size_gb, serial, drive_type}] for all supported drives (removable + fixed)."""
     kernel32 = ctypes.windll.kernel32
     bitmask = kernel32.GetLogicalDrives()
     drives = []
@@ -72,12 +74,21 @@ def get_removable_drives() -> list[dict]:
             continue
         letter = chr(ord("A") + i)
         root = letter + ":\\"
-        if kernel32.GetDriveTypeW(root) != DRIVE_REMOVABLE:
+        drive_type = kernel32.GetDriveTypeW(root)
+        if drive_type not in DRIVE_SUPPORTED:
             continue
         label = _get_volume_label(kernel32, root)
         size_gb = _get_drive_size_gb(kernel32, root)
         serial = _get_volume_serial(kernel32, root)
-        drives.append({"root": root, "label": label, "size_gb": size_gb, "serial": serial})
+        type_name = "Extraible" if drive_type == DRIVE_REMOVABLE else "Interno"
+        drives.append({
+            "root": root,
+            "label": label,
+            "size_gb": size_gb,
+            "serial": serial,
+            "type": type_name,
+            "drive_type": drive_type
+        })
     return drives
 
 
@@ -227,23 +238,23 @@ def add_file_logging(logger: logging.Logger, log_dir: Path) -> None:
 
 
 def select_drive(drives: list[dict]) -> dict:
-    """Select removable drive. Implements decisions D-01, D-02, D-03 (locked)."""
+    """Select a drive (internal or removable). Implements decisions D-01, D-02, D-03 (locked)."""
     # D-02: no drives found — print error and exit (no retry loop, no manual fallback)
     if not drives:
-        print("No se encontraron unidades extraibles. Conecta un disco e intentalo de nuevo.")
+        print("No se encontraron unidades. Asegúrate de que tienes discos conectados.")
         sys.exit(1)
 
     # D-01: exactly one drive — auto-select silently, no confirmation needed
     if len(drives) == 1:
         d = drives[0]
-        print(f"Usando {d['root']} ({d['label']})")
+        print(f"Usando {d['root']} ({d['label']}) - {d['type']}")
         return d
 
-    # D-03: multiple drives — numbered list: letter + label + size
-    print("Unidades extraibles disponibles:")
+    # D-03: multiple drives — numbered list: letter + label + size + type
+    print("Unidades disponibles:")
     for i, d in enumerate(drives, 1):
         size_str = f"{int(d['size_gb'])} GB"
-        print(f"  {i}) {d['root']} {d['label']} ({size_str})")
+        print(f"  {i}) {d['root']} {d['label']} ({size_str}) [{d['type']}]")
 
     while True:
         choice = input(f"Selecciona una unidad [1-{len(drives)}]: ").strip()
