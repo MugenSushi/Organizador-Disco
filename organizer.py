@@ -266,6 +266,29 @@ RE_MOVIE = re.compile(
     re.IGNORECASE,
 )
 
+# Phase 4 regex patterns — compiled at module level (CLAUDE.md convention)
+RE_SERIES_VARIANT = re.compile(
+    r"^(?P<show>.+?)[_.\s]+[Tt]emporada[_.\s]+(?P<season>\d+)[_.\s]+[Ee]pisodio[_.\s]+(?P<ep>\d+)",
+    re.IGNORECASE,
+)
+
+RE_SERIES_SXXEXX = re.compile(
+    r"^(?P<show>.+?)[_.\s]+[Ss](?P<season>\d{1,2})[Ee](?P<ep>\d{1,3})",
+    re.IGNORECASE,
+)
+
+RE_MOVIE_VARIANT = re.compile(
+    r"^(?P<title>.+?)[_.\s]+\(?(?P<year>(?:19|20)\d{2})\)?",
+    re.IGNORECASE,
+)
+
+RE_NORM_STRIP = re.compile(
+    r"\b(?:1080p|720p|480p|4[Kk]|2160p|x264|x265|h264|h265|avc|hevc"
+    r"|bluray|blu-ray|bdrip|brrip|hdrip|webrip|web-dl|dvdrip|xvid"
+    r"|hdr|sdr|dts|ac3|aac|mp3)\b",
+    re.IGNORECASE,
+)
+
 
 # SECTION 10 — TSV rename applier (RENAME-01, RENAME-02)
 
@@ -672,6 +695,187 @@ def undo_last_run(drive: dict, all_drives: list[dict]) -> None:
         pass  # non-critical — log left behind is harmless
 
 
+# SECTION 16 — Power features (Phase 4)
+
+def generate_rename_plan(drive_root: Path) -> dict:
+    """Scan drive and write rename_plan.tsv with proposed normalizations. (RENAME-03, RENAME-04)"""
+    out_path = drive_root / LOG_DIR_NAME / "rename_plan.tsv"
+    rows = []
+
+    # Scan video files
+    video_files = _scan_videos_recursive(drive_root, SCAN_EXCLUDE_DIR_NAMES)
+    for p in video_files:
+        proposal = _propose_series_rename(p.stem, p, drive_root)
+        if proposal is None:
+            proposal = _propose_movie_rename(p.stem, p, drive_root)
+        if proposal:
+            rows.append(proposal)
+
+    # Scan for misplaced game files (outside Juegos\)
+    juegos_root = drive_root / "Juegos"
+    for sys_name in CONSOLE_SYSTEMS:
+        sys_dir = drive_root / sys_name
+        # sys_dir itself is the misplaced location — contents should be in Juegos\sys_name\
+        if sys_dir.exists():
+            try:
+                with os.scandir(sys_dir) as it:
+                    for entry in it:
+                        if entry.is_file(follow_symlinks=False):
+                            p = Path(entry.path)
+                            if is_no_touch(str(p)) or should_skip_path(str(p)):
+                                continue
+                            dst = juegos_root / sys_name / p.name
+                            rows.append((str(p), str(dst)))
+            except PermissionError:
+                logger.warning("SKIP (permiso denegado): %s", sys_dir)
+
+    counts = {"propuestos": len(rows), "escritos": 0}
+    if not rows:
+        print("No se encontraron archivos para renombrar.")
+        return counts
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f, delimiter="\t")
+        writer.writerow(["old_path", "new_path"])  # header
+        for old, new in rows:
+            writer.writerow([old, new])
+    counts["escritos"] = len(rows)
+    print(f"rename_plan.tsv generado: {len(rows)} propuestas -> {out_path}")
+    return counts
+
+
+def _propose_series_rename(stem: str, path: Path, drive_root: Path):
+    """Return (old_path_str, new_path_str) if stem is a series in variant format, else None."""
+    # If already canonical, skip
+    if RE_SERIES.match(stem):
+        return None
+
+    m = RE_SERIES_VARIANT.match(stem)
+    if not m:
+        m = RE_SERIES_SXXEXX.match(stem)
+
+    if not m:
+        return None
+
+    show = re.sub(r"[_.]", " ", m.group("show")).strip()
+    season = int(m.group("season"))
+    ep = int(m.group("ep"))
+
+    if not show:  # D-02: can't infer show name → skip
+        return None
+
+    canonical = f"{show} - Temporada {season} - Episodio {ep}{path.suffix}"
+    new_path = path.parent / canonical
+    return (str(path), str(new_path))
+
+
+def _propose_movie_rename(stem: str, path: Path, drive_root: Path):
+    """Return (old_path_str, new_path_str) if stem is a movie in variant format, else None."""
+    # If already canonical, skip
+    if RE_MOVIE.match(stem):
+        return None
+
+    m = RE_MOVIE_VARIANT.match(stem)
+    if not m:
+        return None
+
+    title = re.sub(r"[_.]", " ", m.group("title")).strip()
+    year = m.group("year")
+
+    if not title:  # D-02: can't infer title → skip
+        return None
+
+    canonical = f"{title} ({year}){path.suffix}"
+    new_path = path.parent / canonical
+    # Only propose if name actually changes
+    if new_path.name == path.name:
+        return None
+    return (str(path), str(new_path))
+
+
+def check_coherence(drive_root: Path) -> None:
+    """Audit drive structure and report problems. (COH-01, COH-02, COH-03)"""
+    series_root   = drive_root / "Series"
+    peliculas_root = drive_root / "Peliculas"
+    report_path   = drive_root / LOG_DIR_NAME / "coherence_report.txt"
+
+    lines = []
+
+    # COH-01: video files outside Series\ and Peliculas\
+    outside = []
+    all_videos = _scan_videos_recursive(drive_root, SCAN_EXCLUDE_DIR_NAMES)
+    for p in all_videos:
+        p_str = str(p).lower()
+        if not (p_str.startswith(str(series_root).lower()) or
+                p_str.startswith(str(peliculas_root).lower())):
+            outside.append(p)
+
+    lines.append(f"=== COH-01: Videos fuera de Series\\ y Peliculas\\ ({len(outside)}) ===")
+    for p in outside:
+        lines.append(f"  {p}")
+
+    # COH-02: series episodes directly under Series\<show>\ without Temporada X subfolder
+    unfoldered = []
+    if series_root.exists():
+        try:
+            with os.scandir(series_root) as it:
+                for show_entry in it:
+                    if not show_entry.is_dir(follow_symlinks=False):
+                        continue
+                    show_dir = Path(show_entry.path)
+                    try:
+                        with os.scandir(show_dir) as show_it:
+                            for ep_entry in show_it:
+                                if ep_entry.is_file(follow_symlinks=False):
+                                    p = Path(ep_entry.path)
+                                    if p.suffix.lower() in VIDEO_EXTS:
+                                        unfoldered.append(p)
+                    except PermissionError:
+                        logger.warning("SKIP (permiso): %s", show_dir)
+        except PermissionError:
+            logger.warning("SKIP (permiso): %s", series_root)
+
+    lines.append(f"\n=== COH-02: Episodios sin carpeta Temporada ({len(unfoldered)}) ===")
+    for p in unfoldered:
+        lines.append(f"  {p}")
+
+    # COH-03: duplicate titles after normalization
+    seen: dict[str, list[Path]] = {}
+    for p in all_videos:
+        key = _normalize_for_dedup(p.stem)
+        if not key:
+            continue
+        seen.setdefault(key, []).append(p)
+
+    duplicates = {k: v for k, v in seen.items() if len(v) > 1}
+    lines.append(f"\n=== COH-03: Titulos duplicados (normalizados) ({len(duplicates)} grupos) ===")
+    for key, paths in sorted(duplicates.items()):
+        lines.append(f"  [{key}]")
+        for p in paths:
+            lines.append(f"    {p}")
+
+    # Output to console
+    for line in lines:
+        print(line)
+
+    # Output to file
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_text = "\n".join(lines)
+    report_path.write_text(report_text, encoding="utf-8")
+    print(f"\n[OK] Reporte guardado en: {report_path}")
+
+
+def _normalize_for_dedup(stem: str) -> str:
+    """Strip year, resolution/codec tags, lowercase, collapse spaces. (COH-03 Claude's Discretion)"""
+    s = stem
+    s = re.sub(r"\((?:19|20)\d{2}\)", "", s)   # strip (year)
+    s = RE_NORM_STRIP.sub("", s)
+    s = re.sub(r"[_.\-]+", " ", s)              # normalize separators
+    s = re.sub(r"\s+", " ", s).strip().lower()
+    return s
+
+
 def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
     """Numbered main menu. Option 5 toggles dry-run (D-01). No confirmation on operation with dry-run (D-02)."""
     log_path = Path(drive["root"]) / LOG_DIR_NAME / "last_run.json"
@@ -684,6 +888,7 @@ def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
         print("  3) Revertir ultima operacion")
         print("  4) Detectar incoherencias")
         print(f"  5) Dry-run: {dry_label}")
+        print("  6) Generar rename_plan.tsv")
         print("  0) Salir")
         choice = input("Opcion: ").strip()
 
@@ -702,9 +907,11 @@ def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
         elif choice == "3":
             undo_last_run(drive, drives)
         elif choice == "4":
-            print("(Disponible en Fase 4)")
+            check_coherence(Path(drive["root"]))
         elif choice == "5":
             executor.dry_run = not executor.dry_run
+        elif choice == "6":
+            generate_rename_plan(Path(drive["root"]))
         else:
             print("Opcion invalida.")
 
@@ -724,3 +931,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

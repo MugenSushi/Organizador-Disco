@@ -574,17 +574,19 @@ def show_menu(executor: Executor, drive: dict) -> None:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Menu dry-run toggle (MENU-02 is Phase 2, but Executor.dry_run is Phase 1)**
    - What we know: MENU-02 (activate dry-run from menu) is Phase 2. The Executor class is Phase 1.
    - What's unclear: Should Phase 1 Executor.dry_run be set at construction time only, or should the menu be able to toggle it at runtime?
    - Recommendation: Design Executor with `dry_run` as a mutable attribute (not just __init__ parameter) so Phase 2 menu can toggle it without reconstructing the object.
+   - **RESOLVED:** `Executor.dry_run` is a mutable attribute (set in `__init__`, reassignable at runtime). Phase 2 menu can toggle it via `executor.dry_run = True/False` without reconstructing the object.
 
 2. **NO_TOUCH_EXTS superset: planner decision needed**
    - What we know: REQUIREMENTS.md INFRA-03 lists fewer extensions than Ordenar.ps1.
    - What's unclear: Should the plan explicitly call out adding `.cso`, `.pbp`, `.v64`?
    - Recommendation: Yes — planner should include the full Ordenar.ps1 superset and note the discrepancy as a clarification, not a scope change.
+   - **RESOLVED:** Full Ordenar.ps1 superset used including `.cso`, `.pbp`, `.v64`. Plan Task 1 action defines the complete 24-extension frozenset. INFRA-03 discrepancy is treated as a ground-truth correction from the PS1 reference implementation.
 
 ---
 
