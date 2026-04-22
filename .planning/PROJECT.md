@@ -10,6 +10,16 @@ con todas las operaciones disponibles. Unifica y mejora dos scripts PowerShell p
 
 Organizar una unidad seleccionada en segundos sin miedo a errores, gracias al dry-run y el undo.
 
+## Current Milestone: v1.1 Mejoras Avanzadas
+
+**Goal:** Añadir soporte para patrones SxxExx, integración opcional con TMDB/TVDB, barra de progreso, y modo watch para una experiencia más completa.
+
+**Target features:**
+- Soporte para patrones SxxExx (S01E05) además del formato actual
+- Integración opcional con TMDB/TVDB para validar nombres
+- Barra de progreso visual para drives grandes (>5000 archivos)
+- Modo watch: monitorizar la unidad y organizar automáticamente archivos nuevos
+
 ## Requirements
 
 ### Validated
@@ -77,7 +87,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 — Phase 3 complete: undo/rollback implemented*
+*Last updated: 2026-04-22 — Milestone v1.1 started: advanced improvements*
 
 
 
