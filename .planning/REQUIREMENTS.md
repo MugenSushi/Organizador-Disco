@@ -36,6 +36,9 @@
 - [x] **ORG-03**: Las carpetas PC, PS1, PS2, PSP, GBA, GBC se mueven a Juegos\<sistema>\ (contenido, no la carpeta como tal)
 - [x] **ORG-04**: Los subtítulos (.srt .ass .sub .idx) con el mismo basename que un vídeo se mueven junto a él
 - [x] **ORG-05**: Tras organizar, las carpetas que quedan vacías se eliminan (os.rmdir, nunca shutil.rmtree)
+- [x] **ORG-06**: Los archivos sueltos en la raíz con extensiones de documentos (pdf, txt, html, etc.) se agrupan en DOCS\
+- [x] **ORG-07**: Las carpetas de launchers y juegos de PC conocidos (SteamLibrary, Epic Games, etc.) se mueven a Juegos PC\
+- [x] **ORG-08**: Las carpetas de software de producción musical u otros programas listados se agrupan en Software\
 
 ### Undo
 
@@ -50,6 +53,11 @@
 - [x] **COH-03**: El reporte detecta títulos duplicados por nombre normalizado (ignorando año, resolución, etc.)
 
 ## v2 Requirements
+
+### Menu Consolidation
+
+- [x] **V2-05**: Menú simplificado con opción única "Ordenar todo" que ejecuta: organizar vídeos (Series/Películas), organizar juegos (consola), organizar otros archivos (DOCS/Juegos PC/Software), y limpiar carpetas vacías
+- [x] **V2-06**: Eliminar opciones de menú separadas para organizar vídeos+juegos y organizar documentos por separado
 
 ### Mejoras futuras
 
@@ -88,6 +96,9 @@
 | ORG-03 | Phase 2 | Complete |
 | ORG-04 | Phase 2 | Complete |
 | ORG-05 | Phase 2 | Complete |
+| ORG-06 | Phase 5 | Complete |
+| ORG-07 | Phase 5 | Complete |
+| ORG-08 | Phase 5 | Complete |
 | MENU-02 | Phase 2 | Complete |
 | MENU-03 | Phase 2 | Complete |
 | UNDO-01 | Phase 3 | Complete |
@@ -98,10 +109,13 @@
 | COH-01 | Phase 4 | Complete |
 | COH-02 | Phase 4 | Complete |
 | COH-03 | Phase 4 | Complete |
+| V2-05 | Phase 6 | Complete |
+| V2-06 | Phase 6 | Complete |
 
 **Coverage:**
-- v1 requirements: 23 total
-- Mapped to phases: 23
+- v1 requirements: 26 total
+- v2 requirements: 2 total
+- Mapped to phases: 28 total
 - Unmapped: 0 ✓
 
 ---

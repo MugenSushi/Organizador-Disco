@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0-hotfix
-milestone_name: Drive Detection Expansion
-status: in-progress
+milestone: v2.0
+milestone_name: Consolidated Menu
+status: complete
 stopped_at: null
-last_updated: "2026-04-22T15:30:00.000Z"
+last_updated: "2026-04-22T20:15:00.000Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 7
+  completed_plans: 7
   percent: 100
 ---
 
@@ -113,6 +113,27 @@ Resume file: .planning/phases/04-power-features/04-CONTEXT.md
 - PROJECT.md — Updated "What This Is" section (discos → discos internos y extraíbles)
 - REQUIREMENTS.md — INFRA-01 updated to reflect all drive types
 - This STATE.md — Added change log
+
+### v2 Consolidated Menu
+
+**Modified:** 2026-04-22 20:15
+**Files Changed:**
+- `organizer.py` — Added `organize_all()` function that runs videos/games + other files + empty cleanup in sequence
+- `organizer.py` — Simplified menu: single "Ordenar todo" option (was 2 separate options)
+- `organizer.py` — Menu now has 6 options + exit (was 7 + exit)
+- `.planning/REQUIREMENTS.md` — V2-05 and V2-06 marked complete
+- `.planning/ROADMAP.md` — Phase 6 marked complete
+- `.planning/STATE.md` — Updated to v2.0 milestone
+
+**What Changed:**
+- Old menu had: 1)Organizar videos y juegos, 2)Organizar documentos, 3)Aplicar renames, 4)Undo, 5)Coherence, 6)Dry-run, 7)Generar renames
+- New menu has: 1)Ordenar todo, 2)Aplicar renames, 3)Undo, 4)Coherence, 5)Dry-run, 6)Generar renames, 0)Exit
+- "Ordenar todo" runs organize_videos_and_games(), organize_other_files(), and _remove_empty_dirs() in sequence
+- Removed separate "Organizar documentos, juegos PC y software" option (now part of "Ordenar todo")
+
+**Rationale:** User requested simplification — one option to organize everything at once, no need to choose between video organization and document organization separately.
+
+**Tested:** N/A (structure change only, no runtime behavior change)
 
 
 

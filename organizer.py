@@ -58,6 +58,22 @@ CLEANUP_EXCLUDE_NAMES: frozenset[str] = frozenset({
     "_organizer_logs",
 })
 
+# Phase 5 constants - Root Organizer
+DOC_EXTS: frozenset[str] = frozenset({
+    ".pdf", ".csv", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".rtf", ".html"
+})
+
+PC_GAMES_DIRS: frozenset[str] = frozenset({
+    "steamlibrary", "epic games", "riot games", "amazon games", 
+    "games", "launcher", "playnite", "warcraft iii", "nostale"
+})
+
+SOFTWARE_DIRS: frozenset[str] = frozenset({
+    "ableton live suite 12.2.1 (x64)", 
+    "image-line fl studio producer edition + signature bundle v20.7.2.1863 rc4 win", 
+    "oculus"
+})
+
 # SECTION 3 — Module-level logger (before all function/class definitions)
 logger = logging.getLogger("organizer")
 
@@ -542,6 +558,72 @@ def organize_videos_and_games(executor: Executor, drive_root: Path) -> dict:
     return counts
 
 
+def organize_all(executor: Executor, drive_root: Path) -> dict:
+    """Run all organization operations in sequence: videos/games, other files, empty cleanup."""
+    counts = {"procesados": 0, "movidos": 0, "saltados": 0, "errores": 0}
+    drive_root = Path(drive_root)
+
+    counts1 = organize_videos_and_games(executor, drive_root)
+    for k in counts:
+        counts[k] += counts1.get(k, 0)
+
+    counts2 = organize_other_files(executor, drive_root)
+    for k in counts:
+        counts[k] += counts2.get(k, 0)
+
+    _remove_empty_dirs(drive_root, [])
+
+    return counts
+
+
+def organize_other_files(executor: Executor, drive_root: Path) -> dict:
+    """Move documents to DOCS, PC games to Juegos PC, and software to Software. (ORG-06, ORG-07, ORG-08)"""
+    counts = {"procesados": 0, "movidos": 0, "saltados": 0, "errores": 0}
+    drive_root = Path(drive_root)
+    docs_dir = drive_root / "DOCS"
+    pc_games_dir = drive_root / "Juegos PC"
+    software_dir = drive_root / "Software"
+
+    try:
+        with os.scandir(drive_root) as it:
+            for entry in it:
+                if should_skip_path(entry.path) or entry.name.lower() in CLEANUP_EXCLUDE_NAMES:
+                    continue
+
+                p = Path(entry.path)
+                if is_no_touch(str(p)):
+                    continue
+
+                if entry.is_file(follow_symlinks=False):
+                    if p.suffix.lower() in DOC_EXTS:
+                        counts["procesados"] += 1
+                        result = executor.move(p, docs_dir / p.name)
+                        if result is not None:
+                            counts["movidos"] += 1
+                        else:
+                            counts["errores"] += 1
+                elif entry.is_dir(follow_symlinks=False):
+                    name_lower = entry.name.lower()
+                    if name_lower in PC_GAMES_DIRS:
+                        counts["procesados"] += 1
+                        result = executor.move(p, pc_games_dir / p.name)
+                        if result is not None:
+                            counts["movidos"] += 1
+                        else:
+                            counts["errores"] += 1
+                    elif name_lower in SOFTWARE_DIRS:
+                        counts["procesados"] += 1
+                        result = executor.move(p, software_dir / p.name)
+                        if result is not None:
+                            counts["movidos"] += 1
+                        else:
+                            counts["errores"] += 1
+    except PermissionError:
+        logger.warning("SKIP (permiso denegado): %s", drive_root)
+
+    return counts
+
+
 # SECTION 14 — Main menu loop and entry point
 
 def _print_summary(counts: dict) -> None:
@@ -894,20 +976,20 @@ def show_menu(executor: Executor, drive: dict, drives: list[dict]) -> None:
         dry_label = "ON" if executor.dry_run else "OFF"
         print()
         print(f"=== Organizador | {drive['root']} {drive['label']} ===")
-        print("  1) Organizar videos y juegos")
-        print("  2) Aplicar rename_plan.tsv")
-        print("  3) Revertir ultima operacion")
-        print("  4) Detectar incoherencias")
-        print(f"  5) Dry-run: {dry_label}")
-        print("  6) Generar rename_plan.tsv")
-        print("  0) Salir")
+        print(" 1) Ordenar todo")
+        print(" 2) Aplicar rename_plan.tsv")
+        print(" 3) Revertir ultima operacion")
+        print(" 4) Detectar incoherencias")
+        print(f" 5) Dry-run: {dry_label}")
+        print(" 6) Generar rename_plan.tsv")
+        print(" 0) Salir")
         choice = input("Opcion: ").strip()
 
         if choice == "0":
             break
         elif choice == "1":
             _prepare_executor_for_run(executor, drive)
-            counts = organize_videos_and_games(executor, Path(drive["root"]))
+            counts = organize_all(executor, Path(drive["root"]))
             _print_summary(counts)
             _flush_and_clear(executor, log_path)
         elif choice == "2":

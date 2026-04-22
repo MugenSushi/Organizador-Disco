@@ -21,6 +21,20 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Core Operations** - All file-moving operations: renames, organize series/movies/games, subtitle co-location, empty-folder cleanup
 - [ ] **Phase 3: Safety Features** - Undo/rollback UI, dry-run preview, operation summaries wired to the menu
 - [ ] **Phase 4: Power Features** - TSV rename plan generator and coherence checker
+- [x] **Phase 6: v2 — Consolidated "Ordenar Todo"** - Single menu option to organize everything at once
+
+### Phase 6: v2 — Consolidated "Ordenar Todo"
+**Goal**: Single menu option that organizes everything (videos, games, other files) and cleans empty folders in one pass.
+**Depends on**: Phase 1, Phase 5
+**Success Criteria** (what must be TRUE):
+1. A single "Ordenar todo" option runs organize_videos_and_games, organize_other_files, and empty folder cleanup in sequence
+2. After organizing, all resulting empty folders are removed
+3. All existing safety features (dry-run, undo, hard blocks) work identically for the consolidated operation
+4. The menu is simplified: only "Ordenar todo", apply renames, undo, coherence, dry-run toggle, generate rename plan, and exit remain
+**Plans**: 1 plan
+
+Plans:
+- [x] 06-01-PLAN.md — Consolidate menu: merge options 1+2 into "Ordenar todo", remove separate file organizer option
 
 ## Phase Details
 
@@ -80,6 +94,20 @@ Plans:
   4. The coherence report identifies title duplicates after normalizing names (stripping year, resolution tags, etc.)
 **Plans**: TBD
 
+### Phase 5: General File Organizer
+**Goal**: Users can organize the rest of the hard drive (documents, PC games, and software) securely with the same dry-run and undo guarantees.
+**Depends on**: Phase 1, Phase 3
+**Requirements**: ORG-06, ORG-07, ORG-08
+**Success Criteria** (what must be TRUE):
+  1. Loose documents with known extensions (PDF, HTML, TXT, CSV, etc.) are moved to DOCS\
+  2. Known game launchers and PC games folders are moved to Juegos PC\
+  3. Known music production software folders are moved to Software\
+  4. Other console game folders (like Juegos PS1) remain untouched.
+**Plans**: 1 plan
+
+Plans:
+- [x] 05-01-PLAN.md — Add `organize_other_files` and wire to a new menu option.
+
 ## Progress
 
 **Execution Order:**
@@ -91,5 +119,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. Core Operations | 2/2 | Completed | 2026-04-22 |
 | 3. Safety Features | 2/2 | Completed | 2026-04-22 |
 | 4. Power Features | 1/1 | Completed | 2026-04-22 |
+| 5. General File Organizer | 1/1 | Completed | 2026-04-22 |
+| 6. v2 Consolidated | 1/1 | Completed | 2026-04-22 |
 
 
