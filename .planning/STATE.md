@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Consolidated Menu
+milestone: v2.1
+milestone_name: Series Flat Structure
 status: complete
 stopped_at: null
-last_updated: "2026-04-22T20:15:00.000Z"
+last_updated: "2026-04-22T23:20:00.000Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -134,6 +134,22 @@ Resume file: .planning/phases/04-power-features/04-CONTEXT.md
 **Rationale:** User requested simplification — one option to organize everything at once, no need to choose between video organization and document organization separately.
 
 **Tested:** N/A (structure change only, no runtime behavior change)
+
+### v2.1 Series Flat Structure
+
+**Modified:** 2026-04-22 23:20
+**Files Changed:**
+- `organizer.py` — Modified `organize_videos_and_games()`: removed `Temporada X` subfolder creation for series
+- `.planning/REQUIREMENTS.md` — ORG-01 updated to reflect flat series structure
+- `.planning/ROADMAP.md` — Phase 7 marked complete
+- `.planning/STATE.md` — Updated to v2.1 milestone
+
+**What Changed:**
+- Series organization before: `Series\<Show>\Temporada 1\episode.mp4`, `Series\<Show>\Temporada 2\episode.mp4`
+- Series organization after: `Series\<Show>\S01E01.mp4`, `Series\<Show>\S02E05.mp4` (all episodes in same folder, no season subfolders)
+- Movies unchanged: `Peliculas\<Titulo (Ano)>\`
+
+**Rationale:** User wanted all episodes of a series in one folder for easier browsing and playback without navigating season subfolders.
 
 
 

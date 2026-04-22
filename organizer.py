@@ -535,8 +535,7 @@ def organize_videos_and_games(executor: Executor, drive_root: Path) -> dict:
         m_series = RE_SERIES.match(stem)
         if m_series:
             show = m_series.group("show").strip()
-            season = int(m_series.group("season"))
-            dst_dir = drive_root / "Series" / show / f"Temporada {season}"
+            dst_dir = drive_root / "Series" / show
         else:
             m_movie = RE_MOVIE.match(stem)
             if m_movie:

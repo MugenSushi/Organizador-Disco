@@ -1,102 +1,211 @@
-# Research Summary: Python Media File Organizer CLI
+﻿# Research Synthesis - Milestone v1.1
 
-**Overall Confidence:** HIGH — grounded in official Python 3 docs and direct analysis of existing PowerShell scripts.
+**Domain:** Advanced media organizer with optional external dependencies
+**Synthesized:** 2026-04-22
+**Scope:** SxxExx patterns, TMDB/TVDB integration, progress bars, watch mode
 
 ---
 
 ## Executive Summary
 
-Windows-only, single-file Python CLI that replaces two PowerShell scripts. Organizes video series, movies, and game folders on a removable drive. Interactive numbered menu, zero external dependencies (stdlib only), single user running it occasionally on one drive at a time.
+The v1.1 milestone extends the core organizer with advanced features while maintaining backward compatibility and progressive enhancement. All new capabilities are optional and gracefully degrade when dependencies are unavailable.
 
-Key architectural decision: **Executor pattern** — all filesystem mutations route through one object holding the dry-run flag. Every operation is preview-capable without scattered conditionals.
+### Key Findings
 
-The dominant risks are data-integrity issues: silent file skipping due to glob bracket metacharacters, non-atomic cross-drive moves, and stale undo logs when drive letter changes on reconnect.
-
----
-
-## 1. Recommended Stack
-
-| Module | Role |
-|--------|------|
-| `pathlib.Path` | All path construction, existence checks, extension access |
-| `shutil` | File moves — `shutil.move()` only, NEVER `Path.rename()` across dirs |
-| `os` | Atomic write (`os.replace`), `os.scandir()` for file discovery — NOT glob |
-| `ctypes.windll` | Removable drive detection via `GetDriveTypeW` (returns `2` for DRIVE_REMOVABLE) |
-| `json` | Undo log — write full array atomically, never append line-by-line |
-| `csv` | TSV reader — `DictReader(delimiter='\t')` with `encoding="utf-8-sig"` for BOM |
-| `re` | Filename pattern matching — compile at module level, named groups |
-| `logging` | Dual output (file + console) — named logger + explicit handlers |
-| `input()` / `print()` | Interactive menu — NO curses (broken on Windows without non-stdlib) |
+1. **Architecture**: Clean separation with new dedicated modules (metadata.py, watcher.py, progress.py)
+2. **Dependencies**: All external libraries optional with function-level imports
+3. **Integration**: Progressive enhancement pattern prevents breaking changes
+4. **Pitfalls**: Critical issues identified in optional dependency handling and resource management
 
 ---
 
-## 2. Table Stakes Features (Must-Have)
+## Feature Feasibility Analysis
 
-1. Removable drive detection and selection
-2. Organize series → `Series\<Show>\Temporada X\`
-3. Organize movies → `Peliculas\<Title (Year)>\`
-4. Organize games → `Juegos\<System>\` (PC, PS1, PS2, PSP, GBA, GBC)
-5. Co-locate subtitles (.srt .ass .sub .idx) with matching video by basename
-6. Hard ROM/ISO protection — `is_no_touch()` at every path-touching site
-7. Collision-safe destinations — `(2)`, `(3)` suffix via `_free_path()` before every move
-8. Dry-run mode — structured preview with counts
-9. Undo/rollback — JSON log written atomically
-10. Empty folder cleanup after moves — `os.rmdir()` only, never `shutil.rmtree()`
-11. Persistent run log to `<drive>\_organizer_logs\`
-12. Apply renames from `rename_plan.tsv`
+### SxxExx Pattern Support
+**Status:** HIGH FEASIBILITY
+- **Implementation**: Extend existing regex patterns with context-aware parsing
+- **Risk**: LOW - Backward compatible, no external dependencies
+- **Effort**: 2-3 days - Regex updates + parsing logic
+- **Testing**: Unit tests for pattern matching, integration tests for organization
 
-Deferred: TSV rename plan generator, coherence checker.
+### TMDB/TVDB Integration
+**Status:** MEDIUM FEASIBILITY  
+- **Implementation**: Optional metadata client with API key management
+- **Risk**: MEDIUM - Network dependencies, rate limiting, API changes
+- **Effort**: 4-5 days - Client implementation, error handling, caching
+- **Testing**: Mock API responses, timeout testing, graceful degradation
 
----
+### Progress Bars
+**Status:** HIGH FEASIBILITY
+- **Implementation**: Threshold-based activation with tqdm/rich fallbacks
+- **Risk**: LOW - Purely additive feature with simple fallbacks
+- **Effort**: 2-3 days - Progress integration, performance tuning
+- **Testing**: Performance benchmarks, UI responsiveness tests
 
-## 3. Architecture (Single .py File Structure)
-
-```
- 1. IMPORTS
- 2. CONFIG / CONSTANTS      NO_TOUCH_EXTS, VIDEO_EXTS, folder names, SKIP_PATH_PARTS
- 3. TYPES / DATA CLASSES    DriveInfo, FileCandidate (NamedTuple)
- 4. LOGGER SETUP            setup_logger()
- 5. SAFETY GUARDS           is_no_touch(path), is_protected_path(path)
- 6. DRIVE DETECTOR          detect_removable_drives() via ctypes.windll.kernel32
- 7. UNDO LOG CLASS          record(), commit() (atomic .tmp+replace), load(), replay_reverse()
- 8. EXECUTOR CLASS          move(), rename(), mkdir(), rmdir_if_empty(), _free_path()
-                            dry_run flag lives HERE ONLY
- 9. SCANNER / CLASSIFIERS   iter_files() via os.scandir (NOT glob/rglob)
-                            parse_series_name(), parse_movie_name(), scan_drive()
-10. OPERATIONS              op_rename_from_tsv(), op_organize_*(), op_cleanup_empty_dirs()
-                            op_coherence_check(), op_generate_tsv(), op_undo()
-11. MENU / UI               main_menu(), ask_dry_run(), pick_drive()
-12. ENTRY POINT             main()
-```
+### Watch Mode
+**Status:** MEDIUM FEASIBILITY
+- **Implementation**: Event-driven monitoring with polling fallback
+- **Risk**: MEDIUM - Resource management, race conditions, cross-platform issues
+- **Effort**: 5-7 days - Watch manager, file stability checks, UI controls
+- **Testing**: File system simulation, interruption handling, cleanup verification
 
 ---
 
-## 4. Top 5 Pitfalls
+## Technical Recommendations
 
-**P1 (CRITICAL) — Never use glob/rglob for file discovery.**
-`[` and `]` are metacharacters — files like `Movie [1080p].mkv` are silently skipped. Use `os.scandir()` with a recursive stack. Already the reason Ordenar.ps1 uses `-LiteralPath` throughout.
+### Architecture Approach
+- **Modular Design**: New features in separate modules with clear interfaces
+- **Progressive Enhancement**: Core functionality unchanged, features layered on top
+- **Dependency Isolation**: Function-level imports prevent startup failures
 
-**P2 (CRITICAL) — Guard against cross-drive moves.**
-`shutil.move()` is atomic only when `src.drive == dst.drive`. Cross-drive = copy+delete = data loss on crash. Assert same drive in `Executor.move()`.
+### Implementation Strategy
+1. **Phase 1**: SxxExx patterns (quick win, no dependencies)
+2. **Phase 2**: Progress bars (additive, low risk)
+3. **Phase 3**: TMDB/TVDB integration (network-dependent)
+4. **Phase 4**: Watch mode (complex, high effort)
 
-**P3 (CRITICAL) — Undo log breaks when drive letter changes on reconnect.**
-Store drive-relative paths + volume serial number in log header. Resolve current drive letter at undo time via ctypes.
-
-**P4 (CRITICAL) — ROM/ISO protection at every path-touching site, not just scan.**
-The subtitle matcher and folder mover must also call `is_no_touch()`. A `.cue` file can be matched by a subtitle glob; a game folder can drag `.bin` files.
-
-**P5 (HIGH) — Every `open()` must specify `encoding="utf-8"`.**
-Windows defaults to `cp1252`. Spanish filenames silently corrupted otherwise. TSV reader uses `encoding="utf-8-sig"` for Excel BOM. `json.dump()` uses `ensure_ascii=False`.
+### Risk Mitigation
+- **Testing**: Comprehensive test coverage for optional features
+- **Documentation**: Clear dependency requirements and installation instructions
+- **Fallbacks**: Graceful degradation when features unavailable
+- **Versioning**: Semantic versioning for optional dependency compatibility
 
 ---
 
-## 5. Suggested Phase Structure
+## Dependencies Analysis
 
-| Phase | Name | Delivers |
-|-------|------|----------|
-| 1 | Infrastructure | Config, safety guards, drive detection, Logger, UndoLog, Executor, Scanner |
-| 2 | Core Operations | Apply TSV renames, organize series/movies/games, co-locate subs, empty-folder cleanup |
-| 3 | Safety and UX | Undo/rollback UI, dry-run report, run summary, session marker |
-| 4 | Power Features | TSV generator, coherence checker (misplaced files, gaps, duplicates) |
+### Required for v1.1
+- **requests** (2.25.0+): HTTP client for TMDB/TVDB APIs
+- **python-dotenv** (0.19.0+): Environment variable management for API keys
+- **tqdm** (4.62.0+): Progress bar implementation
+- **watchdog** (2.1.0+): File system monitoring
 
-Phases 1+2 = working replacement for both PowerShell scripts. Phase 3 hardens it. Phase 4 makes it better.
+### Optional Alternatives
+- **rich** (10.0.0+): Alternative progress bar implementation
+- **urllib3**: Fallback HTTP client if requests unavailable
+
+### Compatibility Matrix
+| Feature | Dependencies | Fallback Behavior |
+|---------|-------------|-------------------|
+| SxxExx | None | N/A (always available) |
+| Progress | tqdm or rich | Simple text progress |
+| TMDB/TVDB | requests + dotenv | Skip validation |
+| Watch Mode | watchdog | Polling-based monitoring |
+
+---
+
+## Integration Patterns
+
+### Optional Feature Detection
+`python
+# Module-level capability flags
+HAS_REQUESTS = False
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    pass
+
+# Function-level usage
+def validate_metadata(name):
+    if not HAS_REQUESTS:
+        print('Metadata validation requires: pip install requests')
+        return None
+    # ... validation logic
+`
+
+### Progress Integration
+`python
+def process_with_progress(items):
+    if len(items) < 100:
+        return process_simple(items)  # Skip progress for small operations
+    
+    try:
+        from tqdm import tqdm
+        with tqdm(total=len(items), desc='Processing') as pbar:
+            for item in items:
+                process_item(item)
+                pbar.update(1)
+    except ImportError:
+        return process_simple(items)
+`
+
+### Watch Mode Architecture
+`python
+class WatchManager:
+    def __init__(self, path, callback):
+        self.path = path
+        self.callback = callback
+        self.observer = None
+        
+    def start(self):
+        try:
+            from watchdog.observers import Observer
+            self.observer = Observer()
+            # Event-driven implementation
+        except ImportError:
+            # Polling fallback
+            self._start_polling()
+    
+    def stop(self):
+        if self.observer:
+            self.observer.stop()
+            self.observer.join(timeout=5)
+`
+
+---
+
+## Critical Success Factors
+
+### User Experience
+- **Zero Breaking Changes**: Existing workflows unchanged
+- **Clear Messaging**: Informative messages about missing dependencies
+- **Graceful Degradation**: Core features always work
+- **Performance**: No overhead for unused features
+
+### Technical Quality
+- **Test Coverage**: 80%+ coverage including optional features
+- **Error Handling**: Robust handling of network/API failures
+- **Resource Management**: Proper cleanup of watchers and threads
+- **Documentation**: Comprehensive setup and usage guides
+
+### Maintenance
+- **Version Pinning**: Specify compatible dependency versions
+- **API Stability**: Handle API changes gracefully
+- **Cross-Platform**: Windows-first but portable design
+- **Extensibility**: Clean interfaces for future features
+
+---
+
+## Risk Assessment
+
+### High Risk Items
+1. **API Dependency Management**: TMDB/TVDB API changes or rate limiting
+2. **Watch Mode Stability**: File system race conditions and resource leaks
+3. **Performance Impact**: Progress bars and monitoring overhead
+
+### Mitigation Strategies
+1. **API Resilience**: Caching, timeouts, fallback to manual validation
+2. **Watch Robustness**: File stability checks, proper cleanup, interruption handling
+3. **Performance Tuning**: Threshold-based activation, batch updates, efficient algorithms
+
+---
+
+## Next Steps
+
+1. **Requirements Definition**: Create detailed REQ-V2-01 through REQ-V2-04
+2. **Roadmap Creation**: Phase breakdown for v1.1 implementation
+3. **Prototype Development**: Quick prototypes for high-risk features
+4. **Testing Strategy**: Define test approach for optional dependencies
+
+---
+
+## Confidence Levels
+
+| Area | Confidence | Rationale |
+|------|------------|-----------|
+| SxxExx Patterns | HIGH | Regex-based, backward compatible |
+| Progress Bars | HIGH | Simple integration, proven libraries |
+| TMDB/TVDB | MEDIUM | Network dependencies, API stability concerns |
+| Watch Mode | MEDIUM | File system complexity, resource management |
+| Overall Architecture | HIGH | Clean separation, progressive enhancement |

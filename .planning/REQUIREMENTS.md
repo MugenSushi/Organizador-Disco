@@ -31,7 +31,7 @@
 
 ### Organización
 
-- [x] **ORG-01**: Los archivos de vídeo con patrón "Show - Temporada X - Episodio Y" se mueven a Series\<Show>\Temporada X\
+- [x] **ORG-01**: Los archivos de vídeo con patrón "Show - Temporada X - Episodio Y" se mueven a Series\<Show>\ (todos los episodios juntos, sin subcarpetas de temporada)
 - [x] **ORG-02**: Los archivos de vídeo con patrón "Título (Año)" se mueven a Peliculas\<Título (Año)>\
 - [x] **ORG-03**: Las carpetas PC, PS1, PS2, PSP, GBA, GBC se mueven a Juegos\<sistema>\ (contenido, no la carpeta como tal)
 - [x] **ORG-04**: Los subtítulos (.srt .ass .sub .idx) con el mismo basename que un vídeo se mueven junto a él
@@ -91,7 +91,7 @@
 | MENU-01 | Phase 1 | Complete |
 | RENAME-01 | Phase 2 | Complete |
 | RENAME-02 | Phase 2 | Complete |
-| ORG-01 | Phase 2 | Complete |
+| ORG-01 | Phase 7 | Complete |
 | ORG-02 | Phase 2 | Complete |
 | ORG-03 | Phase 2 | Complete |
 | ORG-04 | Phase 2 | Complete |

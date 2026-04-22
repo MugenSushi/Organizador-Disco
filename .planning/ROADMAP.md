@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Core Operations** - All file-moving operations: renames, organize series/movies/games, subtitle co-location, empty-folder cleanup
 - [ ] **Phase 3: Safety Features** - Undo/rollback UI, dry-run preview, operation summaries wired to the menu
 - [ ] **Phase 4: Power Features** - TSV rename plan generator and coherence checker
-- [x] **Phase 6: v2 — Consolidated "Ordenar Todo"** - Single menu option to organize everything at once
+- [x] **Phase 7: v2.1 — Series Sin Subcarpetas de Temporada** - All episodes of a series in one folder, no Temporada subfolders
 
 ### Phase 6: v2 — Consolidated "Ordenar Todo"
 **Goal**: Single menu option that organizes everything (videos, games, other files) and cleans empty folders in one pass.
@@ -35,6 +35,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 06-01-PLAN.md — Consolidate menu: merge options 1+2 into "Ordenar todo", remove separate file organizer option
+
+### Phase 7: v2.1 — Series Sin Subcarpetas de Temporada
+**Goal**: All episodes of a series are placed directly in `Series\<Show>\` without Temporada subfolders.
+**Depends on**: Phase 6
+**Success Criteria** (what must be TRUE):
+1. Series files matching the pattern are moved to `Series\<Show>\episode.mp4` (no Temporada X subfolder)
+2. Movies continue to use `Peliculas\<Titulo (Ano)>\` unchanged
+3. Undo log correctly records the new paths
+**Plans**: 1 plan
+
+Plans:
+- [x] 07-01-PLAN.md — Modify organize_videos_and_games: remove Temporada subfolder creation for series
 
 ## Phase Details
 
@@ -121,5 +133,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 4. Power Features | 1/1 | Completed | 2026-04-22 |
 | 5. General File Organizer | 1/1 | Completed | 2026-04-22 |
 | 6. v2 Consolidated | 1/1 | Completed | 2026-04-22 |
+| 7. v2.1 Series Flat | 1/1 | Completed | 2026-04-22 |
 
 
