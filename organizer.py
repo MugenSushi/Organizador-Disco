@@ -304,6 +304,11 @@ RE_SERIES_SXXEXX = re.compile(
     re.IGNORECASE,
 )
 
+RE_SERIES_SEASON = re.compile(
+    r"^(?P<show>.+?)\s-\sSeason\s(?P<season>\d+)\s-\s(?:Episode\s)?(?P<ep>\d+)",
+    re.IGNORECASE,
+)
+
 RE_MOVIE_VARIANT = re.compile(
     r"^(?P<title>.+?)[_.\s]+\(?(?P<year>(?:19|20)\d{2})\)?",
     re.IGNORECASE,
@@ -533,6 +538,13 @@ def organize_videos_and_games(executor: Executor, drive_root: Path) -> dict:
         stem = video_path.stem
 
         m_series = RE_SERIES.match(stem)
+        if not m_series:
+            m_series = RE_SERIES_SEASON.match(stem)
+        if not m_series:
+            m_series = RE_SERIES_VARIANT.match(stem)
+        if not m_series:
+            m_series = RE_SERIES_SXXEXX.match(stem)
+
         if m_series:
             show = m_series.group("show").strip()
             dst_dir = drive_root / "Series" / show
